@@ -91,6 +91,7 @@ while True:
 
         # If there is no closest, get to new fishes
         if closest_creature_id == 0:
+            # Turn light on if not done recently
             if turn - last_light > 4:
                 light = 1
                 last_light = turn
@@ -109,7 +110,7 @@ while True:
                         sum_x -= 1
                         sum_y -= 1
                     case "TR":
-                        sum_y += 1
+                        sum_x += 1
                         sum_y -= 1
                     case "BL":
                         sum_x -= 1
@@ -119,12 +120,22 @@ while True:
                         sum_y += 1
                     case _:
                         print("panic")
+            
+            # When all fish is caught, go to top
+            if count == 0:
+                print(f"All fishes caught!", file=sys.stderr, flush=True)
+                print(f"MOVE {drone_x} 0 0")
+                continue
+
+            # When fish is all around
+            if sum_x == 0 and sum_y == 0:
+                print(f"No fish! Fish all around! Waiting {directions}", file=sys.stderr, flush=True)
+                print("WAIT 1")
+                last_light = turn
+                continue
+            
             mx = sum_x / count
             my = sum_y / count
-            if mx == 0 and my == 0:
-                print("No fish! Fish all around! Waiting", file=sys.stderr, flush=True)
-                print("WAIT 1")
-                continue
             mx_ratio = mx / (abs(mx)+abs(my))
             my_ratio = my / (abs(mx)+abs(my))
             mx = math.floor(600*mx_ratio)
@@ -138,7 +149,8 @@ while True:
         # Get to the target
         tx, ty = positions[closest_creature_id]
 
-        if closest_dist > 600 and closest_dist <= 2000 and battery > 5:
+        # Turn light on when allows catching fish
+        if closest_dist > 800 and closest_dist <= 2000 and battery > 5:
             light = 1
             last_light = turn
         else:
