@@ -43,7 +43,10 @@ class PossibleFishPosition:
         return [round((self.min_x+self.max_x)/2), round((self.min_y+self.max_y)/2)]
     
     def __str__(self):
-        f"[{self.min_x}..={self.max_x}, {self.min_y}..={self.max_y}]"
+        return f"[{self.min_x}..={self.max_x}, {self.min_y}..={self.max_y}]"
+
+    def __repr__(self):
+        return self.__str__()
 
 creature_count = int(input())
 for i in range(creature_count):
@@ -101,17 +104,17 @@ while True:
         if creature_id in possible_fish_positions:
             match radar:
                 case "TL":
-                    possible_fish_positions[creature_id].max_y = max(drones[drone_id].y, possible_fish_positions[creature_id].max_y)
-                    possible_fish_positions[creature_id].max_x = max(drones[drone_id].x, possible_fish_positions[creature_id].max_x)
+                    possible_fish_positions[creature_id].max_y = min(drones[drone_id].y, possible_fish_positions[creature_id].max_y)
+                    possible_fish_positions[creature_id].max_x = min(drones[drone_id].x, possible_fish_positions[creature_id].max_x)
                 case "TR":
-                    possible_fish_positions[creature_id].max_y = max(drones[drone_id].y, possible_fish_positions[creature_id].max_y)
-                    possible_fish_positions[creature_id].min_x = min(drones[drone_id].x+1, possible_fish_positions[creature_id].min_x)
+                    possible_fish_positions[creature_id].max_y = min(drones[drone_id].y, possible_fish_positions[creature_id].max_y)
+                    possible_fish_positions[creature_id].min_x = max(drones[drone_id].x+1, possible_fish_positions[creature_id].min_x)
                 case "BL":
-                    possible_fish_positions[creature_id].min_y = min(drones[drone_id].y+1, possible_fish_positions[creature_id].min_y)
-                    possible_fish_positions[creature_id].max_x = max(drones[drone_id].x, possible_fish_positions[creature_id].max_x)
+                    possible_fish_positions[creature_id].min_y = max(drones[drone_id].y+1, possible_fish_positions[creature_id].min_y)
+                    possible_fish_positions[creature_id].max_x = min(drones[drone_id].x, possible_fish_positions[creature_id].max_x)
                 case "BR":
-                    possible_fish_positions[creature_id].min_y = min(drones[drone_id].y+1, possible_fish_positions[creature_id].min_y)
-                    possible_fish_positions[creature_id].min_x = min(drones[drone_id].x+1, possible_fish_positions[creature_id].min_x)
+                    possible_fish_positions[creature_id].min_y = max(drones[drone_id].y+1, possible_fish_positions[creature_id].min_y)
+                    possible_fish_positions[creature_id].min_x = max(drones[drone_id].x+1, possible_fish_positions[creature_id].min_x)
                 case _:
                     print("unknown direction")
     print(f"{possible_fish_positions}", file=sys.stderr, flush=True)
