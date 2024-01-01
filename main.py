@@ -21,71 +21,32 @@ class Drone:
         self.battery = battery
         self.last_light = -math.inf
         self.scans = set()
-        self.directions = {}
+
+class PossibleFishPosition:
+    def __init__(self, ty):
+        self.min_x = 0
+        self.max_x = 9999
+        match ty:
+            case 0:
+                self.min_y = 2500
+                self.max_y = 5000
+            case 1:
+                self.min_y = 5000
+                self.max_y = 7500
+            case 2:
+                self.min_y = 7500
+                self.max_y = 9999
+            case _:
+                print("Unknown fish type")
+
+    def estimate(self):
+        return [round((self.min_x+self.max_x)/2), round((self.min_y+self.max_y)/2)]
 
 creature_count = int(input())
 for i in range(creature_count):
     creature_id, color, ty = [int(j) for j in input().split()]
     colors[creature_id] = color
     types[creature_id] = ty
-
-def move_using_radar(drone_id):
-    # Turn light on if not done recently
-    if turn - drones[drone_id].last_light >= 4:
-        light = 1
-        drones[drone_id].last_light = turn
-    else:
-        print(turn, drones[drone_id].last_light, file=sys.stderr, flush=True)
-        light = 0
-    
-    # Detect best direction
-    sum_x = 0
-    sum_y = 0
-    count = 0
-    for creature_id in drones[drone_id].directions:
-        if creature_id in all_scans:
-            continue
-        direction = drones[drone_id].directions[creature_id]
-        count += 1
-        match direction:
-            case "TL":
-                sum_x -= 1
-                sum_y -= 1
-            case "TR":
-                sum_x += 1
-                sum_y -= 1
-            case "BL":
-                sum_x -= 1
-                sum_y += 1
-            case "BR":
-                sum_x += 1
-                sum_y += 1
-            case _:
-                print("panic")
-    
-    # When all fish is caught, go to top
-    if count == 0:
-        print(f"All fishes caught!", file=sys.stderr, flush=True)
-        print(f"MOVE {drones[drone_id].x} 0 0")
-        return
-
-    # When fish is all around
-    if sum_x == 0 and sum_y == 0:
-        print(f"No fish! Fish all around! Waiting {drones[drone_id].directions}", file=sys.stderr, flush=True)
-        print(f"WAIT {light}")
-        return
-    
-    # Move towards the poiscaille
-    mx = sum_x / count
-    my = sum_y / count
-    mx_ratio = mx / (abs(mx)+abs(my))
-    my_ratio = my / (abs(mx)+abs(my))
-    mx = math.floor(600*mx_ratio)
-    my = math.floor(600*my_ratio)
-    ex = drones[drone_id].x+mx
-    ey = drones[drone_id].y+my
-    print(f"No fish! Driven by {sum_x},{sum_y} over {count} -> {ex} {ey}", file=sys.stderr, flush=True)
-    print(f"MOVE {ex} {ey} {light}")
 
 # game loop
 turn = 0
@@ -117,17 +78,45 @@ while True:
     for i in range(drone_scan_count):
         drone_id, creature_id = [int(j) for j in input().split()]
     visible_creature_count = int(input())
+    positions = {}
     for i in range(visible_creature_count):
         creature_id, creature_x, creature_y, creature_vx, creature_vy = [int(j) for j in input().split()]
         positions[creature_id] = creature_x, creature_y
         speeds[creature_id] = creature_vx, creature_vy
+
+    # Find out what the possible fish positions are
+    possible_fish_positions = {}
+    for creature_id in types.keys():
+        if not creature_id in positions:
+            possible_fish_positions[creature_id] = PossibleFishPosition(types[creature_id])
     radar_blip_count = int(input())
     for i in range(radar_blip_count):
         inputs = input().split()
         drone_id = int(inputs[0])
         creature_id = int(inputs[1])
         radar = inputs[2]
-        drones[drone_id].directions[creature_id] = radar
+        if creature_id in possible_fish_positions:
+            match radar:
+                case "TL":
+                    possible_fish_positions[creature_id].max_y = max(drones[drone_id].y, possible_fish_positions[creature_id].max_y)
+                    possible_fish_positions[creature_id].max_x = max(drones[drone_id].x, possible_fish_positions[creature_id].max_x)
+                case "TR":
+                    possible_fish_positions[creature_id].max_y = max(drones[drone_id].y, possible_fish_positions[creature_id].max_y)
+                    possible_fish_positions[creature_id].min_x = min(drones[drone_id].x+1, possible_fish_positions[creature_id].min_x)
+                case "BL":
+                    possible_fish_positions[creature_id].min_y = min(drones[drone_id].y+1, possible_fish_positions[creature_id].min_y)
+                    possible_fish_positions[creature_id].max_x = max(drones[drone_id].x, possible_fish_positions[creature_id].max_x)
+                case "BR":
+                    possible_fish_positions[creature_id].min_y = min(drones[drone_id].y+1, possible_fish_positions[creature_id].min_y)
+                    possible_fish_positions[creature_id].min_x = min(drones[drone_id].x+1, possible_fish_positions[creature_id].min_x)
+                case _:
+                    print("unknown direction")
+    print(f"{possible_fish_positions}", file=sys.stderr, flush=True)
+
+    # Complete positions with estimates
+    for creature_id in types.keys():
+        if not creature_id in positions:
+            positions[creature_id] = possible_fish_positions[creature_id].estimate()
 
     turn += 1
     for drone_id in drones.keys():
@@ -163,9 +152,10 @@ while True:
                 closest_dist = distance
                 closest_creature_id = creature_id
 
-        # If there is no closest, get to new fishes
+        # When all fish is caught, go to top
         if closest_creature_id == 0:
-            move_using_radar(drone_id)
+            print(f"All fishes caught!", file=sys.stderr, flush=True)
+            print(f"MOVE {drones[drone_id].x} 0 0")
             continue
 
         # Get to the target
