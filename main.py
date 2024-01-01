@@ -8,7 +8,6 @@ colors = {}
 types = {}
 positions = {}
 speeds = {}
-directions = {}
 all_scans = set()
 saved_scans = set()
 foe_saved_scans = set()
@@ -22,6 +21,7 @@ class Drone:
         self.battery = battery
         self.last_light = -math.inf
         self.scans = set()
+        self.directions = {}
 
 creature_count = int(input())
 for i in range(creature_count):
@@ -40,28 +40,28 @@ def move_using_radar(drone_id):
     
     # Detect best direction
     sum_x = 0
-    sum_y = 1
-    count = 1
-    #for creature_id in directions:
-    #    if creature_id in scans:
-    #        continue
-    #    direction = directions[creature_id]
-    #    count += 1
-    #    match direction:
-    #        case "TL":
-    #            sum_x -= 1
-    #            sum_y -= 1
-    #        case "TR":
-    #            sum_x += 1
-    #            sum_y -= 1
-    #        case "BL":
-    #            sum_x -= 1
-    #            sum_y += 1
-    #        case "BR":
-    #            sum_x += 1
-    #            sum_y += 1
-    #        case _:
-    #            print("panic")
+    sum_y = 0
+    count = 0
+    for creature_id in drones[drone_id].directions:
+        if creature_id in all_scans:
+            continue
+        direction = drones[drone_id].directions[creature_id]
+        count += 1
+        match direction:
+            case "TL":
+                sum_x -= 1
+                sum_y -= 1
+            case "TR":
+                sum_x += 1
+                sum_y -= 1
+            case "BL":
+                sum_x -= 1
+                sum_y += 1
+            case "BR":
+                sum_x += 1
+                sum_y += 1
+            case _:
+                print("panic")
     
     # When all fish is caught, go to top
     if count == 0:
@@ -71,7 +71,7 @@ def move_using_radar(drone_id):
 
     # When fish is all around
     if sum_x == 0 and sum_y == 0:
-        print(f"No fish! Fish all around! Waiting {directions}", file=sys.stderr, flush=True)
+        print(f"No fish! Fish all around! Waiting {drones[drone_id].directions}", file=sys.stderr, flush=True)
         print(f"WAIT {light}")
         return
     
@@ -127,7 +127,7 @@ while True:
         drone_id = int(inputs[0])
         creature_id = int(inputs[1])
         radar = inputs[2]
-        directions[creature_id] = radar
+        drones[drone_id].directions[creature_id] = radar
 
     turn += 1
     for drone_id in drones.keys():
