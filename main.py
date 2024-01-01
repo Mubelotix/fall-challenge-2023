@@ -27,6 +27,9 @@ class PossibleFishPosition:
         self.min_x = 0
         self.max_x = 9999
         match ty:
+            case -1:
+                self.min_y = 2500
+                self.max_y = 9999
             case 0:
                 self.min_y = 2500
                 self.max_y = 5000
