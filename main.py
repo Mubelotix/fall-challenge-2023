@@ -13,7 +13,6 @@ scans = set()
 saved_scans = set()
 foe_saved_scans = set()
 drones = {}
-last_light = -math.inf
 
 class Drone:
     def __init__(self, x, y, emergency, battery):
@@ -21,6 +20,7 @@ class Drone:
         self.y = y
         self.emergency = emergency
         self.battery = battery
+        self.last_light = -math.inf
 
 creature_count = int(input())
 for i in range(creature_count):
@@ -28,38 +28,39 @@ for i in range(creature_count):
     colors[creature_id] = color
     types[creature_id] = ty
 
-def move_using_radar(last_light, drone_id):
+def move_using_radar(drone_id):
     # Turn light on if not done recently
-    if turn - last_light > 4:
+    if turn - drones[drone_id].last_light >= 4:
         light = 1
-        last_light = turn
+        drones[drone_id].last_light = turn
     else:
+        print(turn, drones[drone_id].last_light, file=sys.stderr, flush=True)
         light = 0
     
     # Detect best direction
     sum_x = 0
-    sum_y = 0
-    count = 0
-    for creature_id in directions:
-        if creature_id in scans:
-            continue
-        direction = directions[creature_id]
-        count += 1
-        match direction:
-            case "TL":
-                sum_x -= 1
-                sum_y -= 1
-            case "TR":
-                sum_x += 1
-                sum_y -= 1
-            case "BL":
-                sum_x -= 1
-                sum_y += 1
-            case "BR":
-                sum_x += 1
-                sum_y += 1
-            case _:
-                print("panic")
+    sum_y = 1
+    count = 1
+    #for creature_id in directions:
+    #    if creature_id in scans:
+    #        continue
+    #    direction = directions[creature_id]
+    #    count += 1
+    #    match direction:
+    #        case "TL":
+    #            sum_x -= 1
+    #            sum_y -= 1
+    #        case "TR":
+    #            sum_x += 1
+    #            sum_y -= 1
+    #        case "BL":
+    #            sum_x -= 1
+    #            sum_y += 1
+    #        case "BR":
+    #            sum_x += 1
+    #            sum_y += 1
+    #        case _:
+    #            print("panic")
     
     # When all fish is caught, go to top
     if count == 0:
@@ -71,7 +72,6 @@ def move_using_radar(last_light, drone_id):
     if sum_x == 0 and sum_y == 0:
         print(f"No fish! Fish all around! Waiting {directions}", file=sys.stderr, flush=True)
         print(f"WAIT {light}")
-        last_light = turn
         return
     
     # Move towards the poiscaille
@@ -87,6 +87,7 @@ def move_using_radar(last_light, drone_id):
     print(f"MOVE {ex} {ey} {light}")
 
 # game loop
+turn = 0
 while True:
     my_score = int(input())
     foe_score = int(input())
@@ -101,7 +102,13 @@ while True:
     my_drone_count = int(input())
     for i in range(my_drone_count):
         drone_id, drone_x, drone_y, emergency, battery = [int(j) for j in input().split()]
-        drones[drone_id] = Drone(drone_x, drone_y, emergency, battery)
+        if not drone_id in drones:
+            drones[drone_id] = Drone(drone_x, drone_y, emergency, battery)
+        else:
+            drones[drone_id].x = drone_x
+            drones[drone_id].y = drone_y
+            drones[drone_id].emergency = emergency
+            drones[drone_id].battery = battery
     foe_drone_count = int(input())
     for i in range(foe_drone_count):
         foe_drone_id, foe_drone_x, foe_drone_y, foe_emergency, foe_battery = [int(j) for j in input().split()]
@@ -121,10 +128,8 @@ while True:
         radar = inputs[2]
         directions[creature_id] = radar
 
-    turn = 0
+    turn += 1
     for drone_id in drones.keys():
-        turn += 1
-
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(positions)
         for creature_id in scans:
@@ -158,7 +163,7 @@ while True:
 
         # If there is no closest, get to new fishes
         if closest_creature_id == 0:
-            move_using_radar(last_light, drone_id)
+            move_using_radar(drone_id)
             continue
 
         # Get to the target
@@ -167,7 +172,7 @@ while True:
         # Turn light on when allows catching fish
         if closest_dist > 800 and closest_dist <= 2000 and battery > 5:
             light = 1
-            last_light = turn
+            drones[drone_id].last_light = turn
         else:
             light = 0
 
