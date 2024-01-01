@@ -120,15 +120,16 @@ while True:
     print(f"{possible_fish_positions}", file=sys.stderr, flush=True)
 
     # Complete positions with estimates
+    inferred_positions = copy.deepcopy(positions)
     for creature_id in types.keys():
         if not creature_id in positions:
-            positions[creature_id] = possible_fish_positions[creature_id].estimate()
+            inferred_positions[creature_id] = possible_fish_positions[creature_id].estimate()
 
     turn += 1
     targetted = set()
     for drone_id in drones.keys():
         # Retain positions from unscanned poissons
-        unscanned_positions = copy.deepcopy(positions)
+        unscanned_positions = copy.deepcopy(inferred_positions)
         for creature_id in all_scans:
             try:
                 unscanned_positions.pop(creature_id)
@@ -147,7 +148,7 @@ while True:
             dx = x - drones[drone_id].x
             dy = y - drones[drone_id].y
             dist = math.sqrt(dx**2 + dy**2)
-            if dist < 800:
+            if creature_id in positions and dist < 800:
                 all_scans.add(creature_id)
                 drones[drone_id].scans.add(creature_id)
             else:
@@ -160,7 +161,6 @@ while True:
         for creature_id in distances.keys():
             distance = distances[creature_id]
             if distance < closest_dist:
-                print(f"{distance} < {closest_dist} ({creature_id})", file=sys.stderr, flush=True)
                 closest_dist = distance
                 closest_creature_id = creature_id
 
@@ -171,11 +171,11 @@ while True:
             continue
 
         # Get to the target
-        tx, ty = positions[closest_creature_id]
+        tx, ty = inferred_positions[closest_creature_id]
         targetted.add(closest_creature_id)
 
         # Turn light on when allows catching fish
-        if closest_dist > 800 and closest_dist <= 2000 and battery > 5:
+        if closest_dist > 800 and closest_dist <= 2000:
             light = 1
             drones[drone_id].last_light = turn
         else:
