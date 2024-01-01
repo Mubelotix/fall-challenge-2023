@@ -9,7 +9,7 @@ types = {}
 positions = {}
 speeds = {}
 directions = {}
-scans = set()
+all_scans = set()
 saved_scans = set()
 foe_saved_scans = set()
 drones = {}
@@ -21,6 +21,7 @@ class Drone:
         self.emergency = emergency
         self.battery = battery
         self.last_light = -math.inf
+        self.scans = set()
 
 creature_count = int(input())
 for i in range(creature_count):
@@ -132,7 +133,7 @@ while True:
     for drone_id in drones.keys():
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(positions)
-        for creature_id in scans:
+        for creature_id in all_scans:
             try:
                 unscanned_positions.pop(creature_id)
             except:
@@ -146,10 +147,11 @@ while True:
             dy = y - drones[drone_id].y
             dist = math.sqrt(dx**2 + dy**2)
             if dist < 800:
-                scans.add(creature_id)
+                all_scans.add(creature_id)
+                drones[drone_id].scans.add(creature_id)
             else:
                 distances[creature_id] = dist
-        print(f"{distances}\n{scans}", file=sys.stderr, flush=True)
+        print(f"{distances}\n{drones[drone_id].scans}", file=sys.stderr, flush=True)
         
         # Get the closest
         closest_dist = 10000
