@@ -41,6 +41,9 @@ class PossibleFishPosition:
 
     def estimate(self):
         return [round((self.min_x+self.max_x)/2), round((self.min_y+self.max_y)/2)]
+    
+    def __str__(self):
+        f"[{self.min_x}..={self.max_x}, {self.min_y}..={self.max_y}]"
 
 creature_count = int(input())
 for i in range(creature_count):
@@ -119,10 +122,16 @@ while True:
             positions[creature_id] = possible_fish_positions[creature_id].estimate()
 
     turn += 1
+    targetted = set()
     for drone_id in drones.keys():
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(positions)
         for creature_id in all_scans:
+            try:
+                unscanned_positions.pop(creature_id)
+            except:
+                pass
+        for creature_id in targetted:
             try:
                 unscanned_positions.pop(creature_id)
             except:
@@ -160,6 +169,7 @@ while True:
 
         # Get to the target
         tx, ty = positions[closest_creature_id]
+        targetted.add(closest_creature_id)
 
         # Turn light on when allows catching fish
         if closest_dist > 800 and closest_dist <= 2000 and battery > 5:
