@@ -12,13 +12,79 @@ directions = {}
 scans = set()
 saved_scans = set()
 foe_saved_scans = set()
+drones = {}
 last_light = -math.inf
+
+class Drone:
+    def __init__(self, x, y, emergency, battery):
+        self.x = x
+        self.y = y
+        self.emergency = emergency
+        self.battery = battery
 
 creature_count = int(input())
 for i in range(creature_count):
     creature_id, color, ty = [int(j) for j in input().split()]
     colors[creature_id] = color
     types[creature_id] = ty
+
+def move_using_radar(last_light, drone_id):
+    # Turn light on if not done recently
+    if turn - last_light > 4:
+        light = 1
+        last_light = turn
+    else:
+        light = 0
+    
+    # Detect best direction
+    sum_x = 0
+    sum_y = 0
+    count = 0
+    for creature_id in directions:
+        if creature_id in scans:
+            continue
+        direction = directions[creature_id]
+        count += 1
+        match direction:
+            case "TL":
+                sum_x -= 1
+                sum_y -= 1
+            case "TR":
+                sum_x += 1
+                sum_y -= 1
+            case "BL":
+                sum_x -= 1
+                sum_y += 1
+            case "BR":
+                sum_x += 1
+                sum_y += 1
+            case _:
+                print("panic")
+    
+    # When all fish is caught, go to top
+    if count == 0:
+        print(f"All fishes caught!", file=sys.stderr, flush=True)
+        print(f"MOVE {drones[drone_id].x} 0 0")
+        return
+
+    # When fish is all around
+    if sum_x == 0 and sum_y == 0:
+        print(f"No fish! Fish all around! Waiting {directions}", file=sys.stderr, flush=True)
+        print(f"WAIT {light}")
+        last_light = turn
+        return
+    
+    # Move towards the poiscaille
+    mx = sum_x / count
+    my = sum_y / count
+    mx_ratio = mx / (abs(mx)+abs(my))
+    my_ratio = my / (abs(mx)+abs(my))
+    mx = math.floor(600*mx_ratio)
+    my = math.floor(600*my_ratio)
+    ex = drones[drone_id].x+mx
+    ey = drones[drone_id].y+my
+    print(f"No fish! Driven by {sum_x},{sum_y} over {count} -> {ex} {ey}", file=sys.stderr, flush=True)
+    print(f"MOVE {ex} {ey} {light}")
 
 # game loop
 while True:
@@ -35,6 +101,7 @@ while True:
     my_drone_count = int(input())
     for i in range(my_drone_count):
         drone_id, drone_x, drone_y, emergency, battery = [int(j) for j in input().split()]
+        drones[drone_id] = Drone(drone_x, drone_y, emergency, battery)
     foe_drone_count = int(input())
     for i in range(foe_drone_count):
         foe_drone_id, foe_drone_x, foe_drone_y, foe_emergency, foe_battery = [int(j) for j in input().split()]
@@ -55,7 +122,7 @@ while True:
         directions[creature_id] = radar
 
     turn = 0
-    for i in range(my_drone_count):
+    for drone_id in drones.keys():
         turn += 1
 
         # Retain positions from unscanned poissons
@@ -70,8 +137,8 @@ while True:
         distances = {}
         for creature_id in unscanned_positions.keys():
             x, y = unscanned_positions[creature_id]
-            dx = x - drone_x
-            dy = y - drone_y
+            dx = x - drones[drone_id].x
+            dy = y - drones[drone_id].y
             dist = math.sqrt(dx**2 + dy**2)
             if dist < 800:
                 scans.add(creature_id)
@@ -91,59 +158,7 @@ while True:
 
         # If there is no closest, get to new fishes
         if closest_creature_id == 0:
-            # Turn light on if not done recently
-            if turn - last_light > 4:
-                light = 1
-                last_light = turn
-            else:
-                light = 0
-            sum_x = 0
-            sum_y = 0
-            count = 0
-            for creature_id in directions:
-                if creature_id in scans:
-                    continue
-                direction = directions[creature_id]
-                count += 1
-                match direction:
-                    case "TL":
-                        sum_x -= 1
-                        sum_y -= 1
-                    case "TR":
-                        sum_x += 1
-                        sum_y -= 1
-                    case "BL":
-                        sum_x -= 1
-                        sum_y += 1
-                    case "BR":
-                        sum_x += 1
-                        sum_y += 1
-                    case _:
-                        print("panic")
-            
-            # When all fish is caught, go to top
-            if count == 0:
-                print(f"All fishes caught!", file=sys.stderr, flush=True)
-                print(f"MOVE {drone_x} 0 0")
-                continue
-
-            # When fish is all around
-            if sum_x == 0 and sum_y == 0:
-                print(f"No fish! Fish all around! Waiting {directions}", file=sys.stderr, flush=True)
-                print("WAIT 1")
-                last_light = turn
-                continue
-            
-            mx = sum_x / count
-            my = sum_y / count
-            mx_ratio = mx / (abs(mx)+abs(my))
-            my_ratio = my / (abs(mx)+abs(my))
-            mx = math.floor(600*mx_ratio)
-            my = math.floor(600*my_ratio)
-            ex = drone_x+mx
-            ey = drone_y+my
-            print(f"No fish! Driven by {sum_x},{sum_y} over {count} -> {ex} {ey}", file=sys.stderr, flush=True)
-            print(f"MOVE {ex} {ey} 1")
+            move_using_radar(last_light, drone_id)
             continue
 
         # Get to the target
