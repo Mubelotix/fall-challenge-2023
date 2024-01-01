@@ -148,7 +148,7 @@ while True:
             dx = x - drones[drone_id].x
             dy = y - drones[drone_id].y
             dist = math.sqrt(dx**2 + dy**2)
-            if creature_id in positions and dist < 800:
+            if creature_id in positions and (dist < 800 or (dist < 2000 and drones[drone_id].last_light == turn-1)):
                 all_scans.add(creature_id)
                 drones[drone_id].scans.add(creature_id)
             else:
