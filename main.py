@@ -222,10 +222,6 @@ while True:
         if drone.emergency:
             print("WAIT 0 🚨")
             continue
-        
-        # Go up if useful and not costly
-        if drone.y < 4500 and len(drone.scans) > 2:
-            drone.going_up = True
 
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(inferred_positions)
@@ -248,7 +244,7 @@ while True:
             dy = y - drone.y
             dist = math.sqrt(dx**2 + dy**2)
             distances[creature_id] = dist
-        print(f"{positions}\n{inferred_positions}\n{distances}\n{drone.scans}", file=sys.stderr, flush=True)
+        print(f"{distances}\n{drone.scans}", file=sys.stderr, flush=True)
 
         # Get the closest passive, deepest passive, and closest monster
         closest_dist = 10000
@@ -307,35 +303,28 @@ while True:
                         dy = -424
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -424
-                            emojis += "1"
                         else:
                             dx = 424
-                            emojis += "2"
                     elif dy > 0 and inferred_positions[closest_monster_id][1] > drone.y:
                         dy = 424
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -424
-                            emojis += "3"
                         else:
                             dx = 424
-                            emojis += "4"
                 else:
                     if dx < 0 and inferred_positions[closest_monster_id][0] < drone.x:
                         dx = -424
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -424
-                            emojis += "5"
                         else:
                             dy = 424
-                            emojis += "6"
                     elif dx > 0 and inferred_positions[closest_monster_id][0] > drone.x:
                         dx = 424
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -424
-                            emojis += "7"
                         else:
                             dy = 424
-                            emojis += "8"
+                emojis += str(closest_monster_id)
                 tx = round(drone.x+dx)
                 ty = round(drone.y+dy)
         
