@@ -297,7 +297,7 @@ while True:
 
         # Avoid threats
         if closest_monster_dist < 2000:
-            emojis += "⚠️" + str(closest_monster_id)
+            emojis += "⚠️"
             dx = tx - drone.x
             dy = ty - drone.y
             low = 424
@@ -306,32 +306,66 @@ while True:
                 low = 154
                 high = 580
                 emojis += "⚠️"
+            if closest_monster_dist < 650:
+                low = 78
+                high = 595
+                emojis += "⚠️"
+            emojis += str(closest_monster_id)
             if abs(dx) < abs(dy):
-                if dy < 0 and inferred_positions[closest_monster_id][1] < drone.y:
-                    dy = -low
-                    if drone.x < inferred_positions[closest_monster_id][0]:
-                        dx = -high
+                if dy < 0:
+                    if inferred_positions[closest_monster_id][1] < drone.y:
+                        dy = -low
+                        if drone.x < inferred_positions[closest_monster_id][0]:
+                            dx = -high
+                        else:
+                            dx = high
                     else:
-                        dx = high
-                elif dy > 0 and inferred_positions[closest_monster_id][1] > drone.y:
-                    dy = low
-                    if drone.x < inferred_positions[closest_monster_id][0]:
-                        dx = -high
+                        dy = -high
+                        if drone.x < inferred_positions[closest_monster_id][0]:
+                            dx = -low
+                        else:
+                            dx = low
+                elif dy > 0:
+                    if inferred_positions[closest_monster_id][1] > drone.y:
+                        dy = low
+                        if drone.x < inferred_positions[closest_monster_id][0]:
+                            dx = -high
+                        else:
+                            dx = high
                     else:
-                        dx = high
+                        dy = high
+                        if drone.x < inferred_positions[closest_monster_id][0]:
+                            dx = -low
+                        else:
+                            dx = low
             else:
-                if dx < 0 and inferred_positions[closest_monster_id][0] < drone.x:
-                    dx = -low
-                    if drone.y < inferred_positions[closest_monster_id][1]:
-                        dy = -high
+                if dx < 0:
+                    if inferred_positions[closest_monster_id][0] < drone.x:
+                        dx = -low
+                        if drone.y < inferred_positions[closest_monster_id][1]:
+                            dy = -high
+                        else:
+                            dy = high
                     else:
-                        dy = high
-                elif dx > 0 and inferred_positions[closest_monster_id][0] > drone.x:
-                    dx = low
-                    if drone.y < inferred_positions[closest_monster_id][1]:
-                        dy = -high
+                        dx = -high
+                        if drone.y < inferred_positions[closest_monster_id][1]:
+                            dy = -low
+                        else:
+                            dy = low
+                elif dx > 0:
+                    if inferred_positions[closest_monster_id][0] > drone.x:
+                        dx = low
+                        if drone.y < inferred_positions[closest_monster_id][1]:
+                            dy = -high
+                        else:
+                            dy = high
                     else:
-                        dy = high
+                        dx = high
+                        if drone.y < inferred_positions[closest_monster_id][1]:
+                            dy = -low
+                        else:
+                            dy = low
+            print(f"HERE {low} {high} {dx} {dy}", file=sys.stderr, flush=True)
             tx = round(drone.x+dx)
             ty = round(drone.y+dy)
         
