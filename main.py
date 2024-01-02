@@ -35,6 +35,10 @@ class Drone:
         self.last_light = -math.inf
         self.scans = set()
         self.going_up = False
+        if x < 5000:
+            self.area = "left"
+        else:
+            self.area = "right"
 
 class PossibleFishPosition:
     def __init__(self, ty):
@@ -246,9 +250,11 @@ while True:
             distances[creature_id] = dist
         print(f"{positions}\n{inferred_positions}\n{distances}\n{drone.scans}", file=sys.stderr, flush=True)
 
-        # Get the closest passive and monster
+        # Get the closest passive, deepest passive, and closest monster
         closest_dist = 10000
         closest_creature_id = 0
+        deepest_depth = 0
+        deepest_creature_id = 0
         closest_monster_dist = 10000
         closest_monster_id = 0
         for creature_id in distances.keys():
@@ -261,6 +267,11 @@ while True:
                 if distance < closest_dist and distance >= 800:
                     closest_dist = distance
                     closest_creature_id = creature_id
+                is_left = inferred_positions[creature_id][0] < 5000
+                in_area = (drone.area == "left" and is_left) or (drone.area == "right" and not is_left)
+                if in_area and inferred_positions[creature_id][1] > deepest_depth:
+                    deepest_depth = inferred_positions[creature_id][1]
+                    deepest_creature_id = creature_id
 
         # Flee the closest monster
         print(f"closest_monster_dist {closest_monster_dist}", file=sys.stderr, flush=True)
@@ -282,24 +293,8 @@ while True:
             print(f"MOVE {ex} {ey} 0 🏃")
             continue
 
-        emojis = ""
-        if drone.chasing:
-            # Chasing
-            emojis = "🏹"
-            tx = inferred_positions[closest_creature_id][0]
-            ty = inferred_positions[closest_creature_id][1]
-        else:
-            # Going down
-            emojis = "⏬"
-            ty = 8600
-            if drone.x < 5000:
-                tx = 2000
-            else:
-                tx = 8000
-
-        # Until bottom reached
-        if drone.y > 8500:
-            drone.chasing = True
+        if deepest_creature_id == 0:
+            drone.going_up = True
 
         # If going up
         if drone.going_up:
@@ -315,6 +310,10 @@ while True:
             else:
                 print(f"MOVE {drone.x} 500 0 ⬆️")
             continue
+        else:
+            emojis = "🏹"
+            tx = inferred_positions[deepest_creature_id][0]
+            ty = inferred_positions[deepest_creature_id][1]
         
         # Turn on light every 3 turns
         if drone.y > 2500 and turn - drone.last_light >= 3:
