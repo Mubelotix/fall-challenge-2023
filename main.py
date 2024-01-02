@@ -276,6 +276,7 @@ while True:
                     deepest_depth = inferred_positions[creature_id][1]
                     deepest_creature_id = creature_id
 
+        # Choose where to go when no fish is to be found
         if deepest_creature_id == 0:
             if len(drone.scans) > 0:
                 drone.going_up = True
