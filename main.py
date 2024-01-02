@@ -162,13 +162,35 @@ while True:
     for drone_id in drones.keys():
         # If emergency just wait
         if drones[drone_id].emergency:
-            print("WAIT 0")
+            print("WAIT 0 🚨")
             continue
 
         # If going up
         if drones[drone_id].going_up:
-            print(f"MOVE {drones[drone_id].x} 500 0")
+            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
             continue
+
+        ty = 8600
+        if drones[drone_id].x < 5000:
+            tx = 2000
+        else:
+            tx = 8000
+
+        if drones[drone_id].y > 8500:
+            drones[drone_id].going_up = True
+            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
+            continue
+
+        if drones[drone_id].y > 2500 and turn - drones[drone_id].last_light >= 3:
+            light = 1
+            emojis = "⏬💡"
+            drones[drone_id].last_light = turn
+        else:
+            light = 0
+            emojis = "⏬"
+
+        print(f"MOVE {tx} {ty} {light} {emojis}")
+        continue
 
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(inferred_positions)
