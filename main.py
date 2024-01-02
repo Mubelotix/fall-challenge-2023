@@ -222,6 +222,10 @@ while True:
         if drone.emergency:
             print("WAIT 0 🚨")
             continue
+        
+        # Stop going up if not useful
+        if len(drone.scans) == 0:
+            drone.going_up = False
 
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(inferred_positions)
@@ -270,64 +274,62 @@ while True:
                     deepest_creature_id = creature_id
 
         if deepest_creature_id == 0:
-            drone.going_up = True
+            if len(drone.scans) > 0:
+                drone.going_up = True
+            else:
+                if drone.area == "left":
+                    drone.area = "right"
+                else:
+                    drone.area = "left"
+                print(f"MOVE {drone.x} {drone.y+600} 0 🔄")
+                continue
 
         # If going up
         if drone.going_up:
             emojis: str = "⬆️"
-            if closest_monster_dist < 2000:
-                emojis += "⚠️"
-                dy = -424
-                if inferred_positions[closest_monster_id][1] < drone.y and drone.x < inferred_positions[closest_monster_id][0]:
-                    dx = -424
-                else:
-                    dx = 424
-                ex = round(drone.x+dx)
-                ey = round(drone.y+dy)
-                print(f"MOVE {ex} {ey} 0 {emojis}")
-            else:
-                print(f"MOVE {drone.x} 500 0 {emojis}")
-            continue
+            tx = drone.x
+            ty = 500
         else:
             emojis: str = "🏹" + str(deepest_creature_id)
             tx = inferred_positions[deepest_creature_id][0]
             ty = inferred_positions[deepest_creature_id][1]
-            if closest_monster_dist < 2000:
-                # Vector to target
-                emojis += "⚠️" + str(closest_monster_id)
-                dx = tx - drone.x
-                dy = ty - drone.y
-                if abs(dx) < abs(dy):
-                    if dy < 0 and inferred_positions[closest_monster_id][1] < drone.y:
-                        dy = -424
-                        if drone.x < inferred_positions[closest_monster_id][0]:
-                            dx = -424
-                        else:
-                            dx = 424
-                    elif dy > 0 and inferred_positions[closest_monster_id][1] > drone.y:
-                        dy = 424
-                        if drone.x < inferred_positions[closest_monster_id][0]:
-                            dx = -424
-                        else:
-                            dx = 424
-                else:
-                    if dx < 0 and inferred_positions[closest_monster_id][0] < drone.x:
+
+        # Avoid threats
+        if closest_monster_dist < 2000:
+            emojis += "⚠️" + str(closest_monster_id)
+            dx = tx - drone.x
+            dy = ty - drone.y
+            if abs(dx) < abs(dy):
+                if dy < 0 and inferred_positions[closest_monster_id][1] < drone.y:
+                    dy = -424
+                    if drone.x < inferred_positions[closest_monster_id][0]:
                         dx = -424
-                        if drone.y < inferred_positions[closest_monster_id][1]:
-                            dy = -424
-                        else:
-                            dy = 424
-                    elif dx > 0 and inferred_positions[closest_monster_id][0] > drone.x:
+                    else:
                         dx = 424
-                        if drone.y < inferred_positions[closest_monster_id][1]:
-                            dy = -424
-                        else:
-                            dy = 424
-                tx = round(drone.x+dx)
-                ty = round(drone.y+dy)
+                elif dy > 0 and inferred_positions[closest_monster_id][1] > drone.y:
+                    dy = 424
+                    if drone.x < inferred_positions[closest_monster_id][0]:
+                        dx = -424
+                    else:
+                        dx = 424
+            else:
+                if dx < 0 and inferred_positions[closest_monster_id][0] < drone.x:
+                    dx = -424
+                    if drone.y < inferred_positions[closest_monster_id][1]:
+                        dy = -424
+                    else:
+                        dy = 424
+                elif dx > 0 and inferred_positions[closest_monster_id][0] > drone.x:
+                    dx = 424
+                    if drone.y < inferred_positions[closest_monster_id][1]:
+                        dy = -424
+                    else:
+                        dy = 424
+            tx = round(drone.x+dx)
+            ty = round(drone.y+dy)
         
         # Turn on light every 3 turns
-        if drone.y > 2500 and turn - drone.last_light >= 3:
+        if not drone.going_up and drone.y > 2500 and turn - drone.last_light >= 3:
             light = 1
             emojis += "💡"
             drone.last_light = turn
@@ -335,46 +337,3 @@ while True:
             light = 0
 
         print(f"MOVE {tx} {ty} {light} {emojis}")
-        continue
-
-
-        # When all fish is caught, go to top
-        if closest_creature_id == 0:
-            print(f"All fishes caught!", file=sys.stderr, flush=True)
-            print(f"MOVE {drone.x} 0 0")
-            continue
-
-        # When danger is nearby, go save the fish
-        if closest_monster_dist < 1200 and len(drone.scans) > 0:
-            print(f"Danger nearby!", file=sys.stderr, flush=True)
-            print(f"MOVE {drone.x} 500 0")
-            drone.going_up = True
-            continue
-
-        # Get to the target
-        print(f"Getting to fish {closest_creature_id}", file=sys.stderr, flush=True)
-        tx, ty = inferred_positions[closest_creature_id]
-        targetted.add(closest_creature_id)
-
-        # Turn light on when allows catching fish
-        #if closest_dist > 800 and closest_dist <= 2000:
-        #    light = 1
-        #    drone.last_light = turn
-        #else:
-        #    light = 0
-        light = 0
-
-        #dx = tx - drone_x
-        #dy = ty - drone_y
-        #mx_ratio = dx / (abs(dx)+abs(dy))
-        #my_ratio = dy / (abs(dx)+abs(dy))
-        #mx = math.floor(600*mx_ratio)
-        #my = math.floor(600*my_ratio)
-        #ex = drone_x+mx
-        #ey = drone_y+my
-
-        # Write an action using print
-        #print(f"tx ty {tx} {ty}\ndx dy {dx} {dy}\nm ratios {mx_ratio} {my_ratio}\nmx my {mx} {my}\nex ey {ex} {ey}", file=sys.stderr, flush=True)
-
-        # MOVE <x> <y> <light (1|0)> | WAIT <light (1|0)>
-        print(f"MOVE {tx} {ty} {light}")
