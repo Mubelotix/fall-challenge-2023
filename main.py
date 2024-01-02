@@ -165,33 +165,6 @@ while True:
             print("WAIT 0 🚨")
             continue
 
-        # If going up
-        if drones[drone_id].going_up:
-            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
-            continue
-
-        ty = 8600
-        if drones[drone_id].x < 5000:
-            tx = 2000
-        else:
-            tx = 8000
-
-        if drones[drone_id].y > 8500:
-            drones[drone_id].going_up = True
-            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
-            continue
-
-        if drones[drone_id].y > 2500 and turn - drones[drone_id].last_light >= 3:
-            light = 1
-            emojis = "⏬💡"
-            drones[drone_id].last_light = turn
-        else:
-            light = 0
-            emojis = "⏬"
-
-        print(f"MOVE {tx} {ty} {light} {emojis}")
-        continue
-
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(inferred_positions)
         for creature_id in all_scans:
@@ -214,7 +187,7 @@ while True:
             dist = math.sqrt(dx**2 + dy**2)
             distances[creature_id] = dist
         print(f"{positions}\n{inferred_positions}\n{distances}\n{drones[drone_id].scans}", file=sys.stderr, flush=True)
-        
+
         # Get the closest passive and monster
         closest_dist = 10000
         closest_creature_id = 0
@@ -230,6 +203,48 @@ while True:
                 if distance < closest_dist and distance >= 800:
                     closest_dist = distance
                     closest_creature_id = creature_id
+
+        # Flee the closest monster
+        if closest_monster_dist < 1300:
+            dx = drones[drone_id].x - inferred_positions[closest_monster_id][0]
+            dy = drones[drone_id].y - inferred_positions[closest_monster_id][1]
+            ex = drones[drone_id].x+dx*600
+            ey = drones[drone_id].y+dy*600
+            if drones[drone_id].y < 5000 and len(drones[drone_id].scans) > 0:
+                drones[drone_id].going_up = True
+            print(f"MOVE {ex} {ey} 0 🏃")
+            continue
+
+        # If going up
+        if drones[drone_id].going_up:
+            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
+            continue
+
+        # Go down
+        ty = 8600
+        if drones[drone_id].x < 5000:
+            tx = 2000
+        else:
+            tx = 8000
+
+        # Until bottom reached
+        if drones[drone_id].y > 8500:
+            drones[drone_id].going_up = True
+            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
+            continue
+        
+        # Turn on light every 3 turns
+        if drones[drone_id].y > 2500 and turn - drones[drone_id].last_light >= 3:
+            light = 1
+            emojis = "⏬💡"
+            drones[drone_id].last_light = turn
+        else:
+            light = 0
+            emojis = "⏬"
+
+        print(f"MOVE {tx} {ty} {light} {emojis}")
+        continue
+
 
         # When all fish is caught, go to top
         if closest_creature_id == 0:
