@@ -289,13 +289,12 @@ while True:
                 print(f"MOVE {drone.x} 500 0 {emojis}")
             continue
         else:
-            emojis: str = "🏹"
+            emojis: str = "🏹" + str(deepest_creature_id)
             tx = inferred_positions[deepest_creature_id][0]
             ty = inferred_positions[deepest_creature_id][1]
-            emojis += str(deepest_creature_id)
             if closest_monster_dist < 2000:
                 # Vector to target
-                emojis += "⚠️"
+                emojis += "⚠️" + str(closest_monster_id)
                 dx = tx - drone.x
                 dy = ty - drone.y
                 if abs(dx) < abs(dy):
@@ -324,7 +323,6 @@ while True:
                             dy = -424
                         else:
                             dy = 424
-                emojis += str(closest_monster_id)
                 tx = round(drone.x+dx)
                 ty = round(drone.y+dy)
         
