@@ -4,6 +4,14 @@ import copy
 
 # Score points by scanning valuable fish faster than your opponent.
 
+def clamp(n, min, max): 
+    if n < min: 
+        return min
+    elif n > max: 
+        return max
+    else: 
+        return n 
+
 colors = {}
 types = {}
 positions = {}
@@ -12,6 +20,11 @@ saved_scans = set()
 foe_saved_scans = set()
 drones = {}
 possible_fish_positions = {}
+
+# Positions {4: (3874, 3550), 5: (6402, 4411), 6: (8355, 5131), 16: (2648, 4414), 17: (5807, 4260), 19: (8248, 4481)}
+# Possible positions {7: [3217..=6417, 5000..=6226], 8: [2567..=9999, 7500..=9999], 10: [0..=2000, 3057..=5000], 11: [2001..=2400, 3400..=5000], 12: [2567..=8625, 6227..=7100], 13: [3939..=4739, 6227..=6989], 14: [2567..=9999, 7500..=9999], 15: [2567..=5098, 7500..=9999], 16: [2484..=2484, 7426..=7426], 17: [2567..=9999, 2500..=6226]}
+
+
 
 class Drone:
     def __init__(self, x, y, emergency, battery):
@@ -193,10 +206,15 @@ while True:
     turn += 1
     targetted = set()
     for drone_id in drones.keys():
+        drone = drones[drone_id]
+
         # If emergency just wait
         if drones[drone_id].emergency:
             print("WAIT 0 🚨")
             continue
+
+        if drone.y < 4500 and len(drone.scans) > 2:
+            drone.going_up = True
 
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(inferred_positions)
@@ -238,13 +256,22 @@ while True:
                     closest_creature_id = creature_id
 
         # Flee the closest monster
-        if closest_monster_dist < 1300:
+        print(f"closest_monster_dist {closest_monster_dist}", file=sys.stderr, flush=True)
+        if closest_monster_dist < 1200:
             dx = drones[drone_id].x - inferred_positions[closest_monster_id][0]
             dy = drones[drone_id].y - inferred_positions[closest_monster_id][1]
-            ex = drones[drone_id].x+dx*600
-            ey = drones[drone_id].y+dy*600
-            if drones[drone_id].y < 5000 and len(drones[drone_id].scans) > 0:
-                drones[drone_id].going_up = True
+            dx = clamp(dx, -drones[drone_id].x, 9999-drones[drone_id].x)
+            dy = clamp(dy, -drones[drone_id].y, 9999-drones[drone_id].y)
+
+            current_norm = math.sqrt(dx**2 + dy**2)
+            if current_norm == 0:
+                current_norm = 600
+                dy = -600
+            extension = 600/current_norm
+            dx *= extension
+            dy *= extension
+            ex = round(drones[drone_id].x+dx)
+            ey = round(drones[drone_id].y+dy)
             print(f"MOVE {ex} {ey} 0 🏃")
             continue
 
