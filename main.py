@@ -273,32 +273,14 @@ while True:
                     deepest_depth = inferred_positions[creature_id][1]
                     deepest_creature_id = creature_id
 
-        # Flee the closest monster
-        print(f"closest_monster_dist {closest_monster_dist}", file=sys.stderr, flush=True)
-        if closest_monster_dist < 1200:
-            dx = drone.x - inferred_positions[closest_monster_id][0]
-            dy = drone.y - inferred_positions[closest_monster_id][1]
-            dx = clamp(dx, -drone.x, 9999-drone.x)
-            dy = clamp(dy, -drone.y, 9999-drone.y)
-
-            current_norm = math.sqrt(dx**2 + dy**2)
-            if current_norm == 0:
-                current_norm = 600
-                dy = -600
-            extension = 600/current_norm
-            dx *= extension
-            dy *= extension
-            ex = round(drone.x+dx)
-            ey = round(drone.y+dy)
-            print(f"MOVE {ex} {ey} 0 🏃")
-            continue
-
         if deepest_creature_id == 0:
             drone.going_up = True
 
         # If going up
         if drone.going_up:
+            emojis: str = "⬆️"
             if closest_monster_dist < 2000:
+                emojis += "⚠️"
                 dy = -424
                 if inferred_positions[closest_monster_id][1] < drone.y and drone.x < inferred_positions[closest_monster_id][0]:
                     dx = -424
@@ -306,14 +288,56 @@ while True:
                     dx = 424
                 ex = round(drone.x+dx)
                 ey = round(drone.y+dy)
-                print(f"MOVE {ex} {ey} 0 ⬆️")
+                print(f"MOVE {ex} {ey} 0 {emojis}")
             else:
-                print(f"MOVE {drone.x} 500 0 ⬆️")
+                print(f"MOVE {drone.x} 500 0 {emojis}")
             continue
         else:
-            emojis = "🏹"
+            emojis: str = "🏹"
             tx = inferred_positions[deepest_creature_id][0]
             ty = inferred_positions[deepest_creature_id][1]
+            emojis += str(deepest_creature_id)
+            if closest_monster_dist < 2000:
+                # Vector to target
+                emojis += "⚠️"
+                dx = tx - drone.x
+                dy = ty - drone.y
+                if abs(dx) < abs(dy):
+                    if dy < 0 and inferred_positions[closest_monster_id][1] < drone.y:
+                        dy = -424
+                        if drone.x < inferred_positions[closest_monster_id][0]:
+                            dx = -424
+                            emojis += "1"
+                        else:
+                            dx = 424
+                            emojis += "2"
+                    elif dy > 0 and inferred_positions[closest_monster_id][1] > drone.y:
+                        dy = 424
+                        if drone.x < inferred_positions[closest_monster_id][0]:
+                            dx = -424
+                            emojis += "3"
+                        else:
+                            dx = 424
+                            emojis += "4"
+                else:
+                    if dx < 0 and inferred_positions[closest_monster_id][0] < drone.x:
+                        dx = -424
+                        if drone.y < inferred_positions[closest_monster_id][1]:
+                            dy = -424
+                            emojis += "5"
+                        else:
+                            dy = 424
+                            emojis += "6"
+                    elif dx > 0 and inferred_positions[closest_monster_id][0] > drone.x:
+                        dx = 424
+                        if drone.y < inferred_positions[closest_monster_id][1]:
+                            dy = -424
+                            emojis += "7"
+                        else:
+                            dy = 424
+                            emojis += "8"
+                tx = round(drone.x+dx)
+                ty = round(drone.y+dy)
         
         # Turn on light every 3 turns
         if drone.y > 2500 and turn - drone.last_light >= 3:
