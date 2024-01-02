@@ -217,6 +217,7 @@ while True:
     targetted = set()
     for drone_id in drones.keys():
         drone = drones[drone_id]
+        emojis = ""
 
         # If emergency just wait
         if drone.emergency:
@@ -224,8 +225,10 @@ while True:
             continue
         
         # Stop going up if not useful
-        if len(drone.scans) == 0:
+        if len(drone.scans) == 0 and drone.going_up:
             drone.going_up = False
+            drone.area = "all"
+            emojis += "🔄"
 
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(inferred_positions)
@@ -268,7 +271,7 @@ while True:
                     closest_dist = distance
                     closest_creature_id = creature_id
                 is_left = inferred_positions[creature_id][0] < 5000
-                in_area = (drone.area == "left" and is_left) or (drone.area == "right" and not is_left)
+                in_area = (drone.area == "left" and is_left) or (drone.area == "right" and not is_left) or drone.area == "all"
                 if in_area and inferred_positions[creature_id][1] > deepest_depth:
                     deepest_depth = inferred_positions[creature_id][1]
                     deepest_creature_id = creature_id
@@ -277,20 +280,17 @@ while True:
             if len(drone.scans) > 0:
                 drone.going_up = True
             else:
-                if drone.area == "left":
-                    drone.area = "right"
-                else:
-                    drone.area = "left"
+                drone.area = "all"
                 print(f"MOVE {drone.x} {drone.y+600} 0 🔄")
                 continue
 
         # If going up
         if drone.going_up:
-            emojis: str = "⬆️"
+            emojis += "⬆️"
             tx = drone.x
             ty = 500
         else:
-            emojis: str = "🏹" + str(deepest_creature_id)
+            emojis += "🏹" + str(deepest_creature_id)
             tx = inferred_positions[deepest_creature_id][0]
             ty = inferred_positions[deepest_creature_id][1]
 
