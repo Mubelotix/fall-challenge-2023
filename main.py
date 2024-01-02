@@ -11,6 +11,7 @@ speeds = {}
 saved_scans = set()
 foe_saved_scans = set()
 drones = {}
+possible_fish_positions = {}
 
 class Drone:
     def __init__(self, x, y, emergency, battery):
@@ -26,21 +27,48 @@ class PossibleFishPosition:
     def __init__(self, ty):
         self.min_x = 0
         self.max_x = 9999
+        self.min_y = 0
+        self.max_y = 9999
+        self.restrict_ty(ty)
+        
+    def restrict_ty(self, ty):
         match ty:
             case -1:
-                self.min_y = 2500
-                self.max_y = 9999
+                self.min_y = max(self.min_y, 2500)
+                self.max_y = min(self.max_y, 9999)
             case 0:
-                self.min_y = 2500
-                self.max_y = 5000
+                self.min_y = max(self.min_y, 2500)
+                self.max_y = min(self.max_y, 5000)
             case 1:
-                self.min_y = 5000
-                self.max_y = 7500
+                self.min_y = max(self.min_y, 5000)
+                self.max_y = min(self.max_y, 7500)
             case 2:
-                self.min_y = 7500
-                self.max_y = 9999
+                self.min_y = max(self.min_y, 7500)
+                self.max_y = min(self.max_y, 9999)
             case _:
                 print("Unknown fish type")
+        self.min_x = max(self.min_x, 0)
+        self.max_x = min(self.max_x, 9999)
+
+    def extend(self, ty):
+        match ty:
+            case -1:
+                self.min_y -= 540
+                self.max_y += 540
+                self.min_x -= 540
+                self.max_x += 540
+            case _:
+                self.min_y -= 400
+                self.max_y += 400
+                self.min_x -= 400
+                self.max_x += 400
+        self.restrict_ty(ty)
+
+    def set_position(self, position):
+        self.min_x = position[0]
+        self.max_x = position[0]
+        self.min_y = position[1]
+        self.max_y = position[1]
 
     def estimate(self):
         return [round((self.min_x+self.max_x)/2), round((self.min_y+self.max_y)/2)]
@@ -105,10 +133,14 @@ while True:
         speeds[creature_id] = creature_vx, creature_vy
 
     # Find out what the possible fish positions are
-    possible_fish_positions = {}
     for creature_id in types.keys():
-        if not creature_id in positions:
+        if not creature_id in possible_fish_positions:
             possible_fish_positions[creature_id] = PossibleFishPosition(types[creature_id])
+        else:
+            possible_fish_positions[creature_id].extend(types[creature_id])
+    for creature_id in positions:
+        position = positions[creature_id]
+        possible_fish_positions[creature_id].set_position(position)
     radar_blip_count = int(input())
     still_in_game = set()
     for i in range(radar_blip_count):
@@ -139,7 +171,6 @@ while True:
             removed_from_game.add(creature_id)
     for creature_id in removed_from_game:
         possible_fish_positions.pop(creature_id)
-    print(f"{possible_fish_positions}", file=sys.stderr, flush=True)
 
     # Complete positions with estimates
     inferred_positions = copy.deepcopy(positions)
@@ -156,6 +187,8 @@ while True:
             all_scans.add(scan)
     for scan in saved_scans:
         all_scans.add(scan)
+
+    print(f"Positions {positions}\nPossible positions {possible_fish_positions}", file=sys.stderr, flush=True)
 
     turn += 1
     targetted = set()
