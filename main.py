@@ -110,10 +110,12 @@ while True:
         if not creature_id in positions:
             possible_fish_positions[creature_id] = PossibleFishPosition(types[creature_id])
     radar_blip_count = int(input())
+    still_in_game = set()
     for i in range(radar_blip_count):
         inputs = input().split()
         drone_id = int(inputs[0])
         creature_id = int(inputs[1])
+        still_in_game.add(creature_id)
         radar = inputs[2]
         if creature_id in possible_fish_positions:
             match radar:
@@ -131,11 +133,17 @@ while True:
                     possible_fish_positions[creature_id].min_x = max(drones[drone_id].x+1, possible_fish_positions[creature_id].min_x)
                 case _:
                     print("unknown direction")
+    removed_from_game = set()
+    for creature_id in possible_fish_positions.keys():
+        if not creature_id in still_in_game:
+            removed_from_game.add(creature_id)
+    for creature_id in removed_from_game:
+        possible_fish_positions.pop(creature_id)
     print(f"{possible_fish_positions}", file=sys.stderr, flush=True)
 
     # Complete positions with estimates
     inferred_positions = copy.deepcopy(positions)
-    for creature_id in types.keys():
+    for creature_id in possible_fish_positions.keys():
         if not creature_id in positions:
             if positions.get(creature_id) is not None:
                 print("panic")
@@ -197,7 +205,7 @@ while True:
                     closest_monster_dist = distance
                     closest_monster_id = creature_id
             else:
-                if distance < closest_dist:
+                if distance < closest_dist and distance >= 800:
                     closest_dist = distance
                     closest_creature_id = creature_id
 
