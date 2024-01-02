@@ -296,7 +296,7 @@ while True:
             ty = inferred_positions[deepest_creature_id][1]
 
         # Avoid threats
-        if closest_monster_dist < 600+540+500:
+        if closest_monster_dist < 600+540+500 - 200:
             emojis += "⚠️"
             dx = tx - drone.x
             dy = ty - drone.y
@@ -326,7 +326,7 @@ while True:
                         else:
                             dx = high
                             l = "B"
-                    else:
+                    elif dx != 0:
                         dy = -high
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -low
@@ -343,7 +343,7 @@ while True:
                         else:
                             dx = high
                             l = "F"
-                    else:
+                    elif dx != 0:
                         dy = high
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -low
@@ -361,7 +361,7 @@ while True:
                         else:
                             dy = high
                             l = "J"
-                    else:
+                    elif dy != 0:
                         dx = -high
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -low
@@ -378,7 +378,7 @@ while True:
                         else:
                             dy = high
                             l = "N"
-                    else:
+                    elif dy != 0:
                         dx = high
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -low
