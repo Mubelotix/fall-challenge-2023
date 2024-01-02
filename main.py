@@ -201,6 +201,12 @@ while True:
     for scan in saved_scans:
         all_scans.add(scan)
 
+    # Get remaining fish
+    remaining_fish = set()
+    for creature_id in inferred_positions.keys():
+        if not creature_id in all_scans:
+            remaining_fish.add(creature_id)
+
     print(f"Positions {positions}\nPossible positions {possible_fish_positions}", file=sys.stderr, flush=True)
 
     turn += 1
@@ -209,10 +215,11 @@ while True:
         drone = drones[drone_id]
 
         # If emergency just wait
-        if drones[drone_id].emergency:
+        if drone.emergency:
             print("WAIT 0 🚨")
             continue
-
+        
+        # Go up if useful and not costly
         if drone.y < 4500 and len(drone.scans) > 2:
             drone.going_up = True
 
@@ -233,11 +240,11 @@ while True:
         distances = {}
         for creature_id in unscanned_positions.keys():
             x, y = unscanned_positions[creature_id]
-            dx = x - drones[drone_id].x
-            dy = y - drones[drone_id].y
+            dx = x - drone.x
+            dy = y - drone.y
             dist = math.sqrt(dx**2 + dy**2)
             distances[creature_id] = dist
-        print(f"{positions}\n{inferred_positions}\n{distances}\n{drones[drone_id].scans}", file=sys.stderr, flush=True)
+        print(f"{positions}\n{inferred_positions}\n{distances}\n{drone.scans}", file=sys.stderr, flush=True)
 
         # Get the closest passive and monster
         closest_dist = 10000
@@ -258,10 +265,10 @@ while True:
         # Flee the closest monster
         print(f"closest_monster_dist {closest_monster_dist}", file=sys.stderr, flush=True)
         if closest_monster_dist < 1200:
-            dx = drones[drone_id].x - inferred_positions[closest_monster_id][0]
-            dy = drones[drone_id].y - inferred_positions[closest_monster_id][1]
-            dx = clamp(dx, -drones[drone_id].x, 9999-drones[drone_id].x)
-            dy = clamp(dy, -drones[drone_id].y, 9999-drones[drone_id].y)
+            dx = drone.x - inferred_positions[closest_monster_id][0]
+            dy = drone.y - inferred_positions[closest_monster_id][1]
+            dx = clamp(dx, -drone.x, 9999-drone.x)
+            dy = clamp(dy, -drone.y, 9999-drone.y)
 
             current_norm = math.sqrt(dx**2 + dy**2)
             if current_norm == 0:
@@ -270,37 +277,52 @@ while True:
             extension = 600/current_norm
             dx *= extension
             dy *= extension
-            ex = round(drones[drone_id].x+dx)
-            ey = round(drones[drone_id].y+dy)
+            ex = round(drone.x+dx)
+            ey = round(drone.y+dy)
             print(f"MOVE {ex} {ey} 0 🏃")
             continue
 
-        # If going up
-        if drones[drone_id].going_up:
-            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
-            continue
-
-        # Go down
-        ty = 8600
-        if drones[drone_id].x < 5000:
-            tx = 2000
+        emojis = ""
+        if drone.chasing:
+            # Chasing
+            emojis = "🏹"
+            tx = inferred_positions[closest_creature_id][0]
+            ty = inferred_positions[closest_creature_id][1]
         else:
-            tx = 8000
+            # Going down
+            emojis = "⏬"
+            ty = 8600
+            if drone.x < 5000:
+                tx = 2000
+            else:
+                tx = 8000
 
         # Until bottom reached
-        if drones[drone_id].y > 8500:
-            drones[drone_id].going_up = True
-            print(f"MOVE {drones[drone_id].x} 500 0 ⬆️")
+        if drone.y > 8500:
+            drone.chasing = True
+
+        # If going up
+        if drone.going_up:
+            if closest_monster_dist < 2000:
+                dy = -424
+                if inferred_positions[closest_monster_id][1] < drone.y and drone.x < inferred_positions[closest_monster_id][0]:
+                    dx = -424
+                else:
+                    dx = 424
+                ex = round(drone.x+dx)
+                ey = round(drone.y+dy)
+                print(f"MOVE {ex} {ey} 0 ⬆️")
+            else:
+                print(f"MOVE {drone.x} 500 0 ⬆️")
             continue
         
         # Turn on light every 3 turns
-        if drones[drone_id].y > 2500 and turn - drones[drone_id].last_light >= 3:
+        if drone.y > 2500 and turn - drone.last_light >= 3:
             light = 1
-            emojis = "⏬💡"
-            drones[drone_id].last_light = turn
+            emojis += "💡"
+            drone.last_light = turn
         else:
             light = 0
-            emojis = "⏬"
 
         print(f"MOVE {tx} {ty} {light} {emojis}")
         continue
@@ -309,14 +331,14 @@ while True:
         # When all fish is caught, go to top
         if closest_creature_id == 0:
             print(f"All fishes caught!", file=sys.stderr, flush=True)
-            print(f"MOVE {drones[drone_id].x} 0 0")
+            print(f"MOVE {drone.x} 0 0")
             continue
 
         # When danger is nearby, go save the fish
-        if closest_monster_dist < 1200 and len(drones[drone_id].scans) > 0:
+        if closest_monster_dist < 1200 and len(drone.scans) > 0:
             print(f"Danger nearby!", file=sys.stderr, flush=True)
-            print(f"MOVE {drones[drone_id].x} 500 0")
-            drones[drone_id].going_up = True
+            print(f"MOVE {drone.x} 500 0")
+            drone.going_up = True
             continue
 
         # Get to the target
@@ -327,7 +349,7 @@ while True:
         # Turn light on when allows catching fish
         #if closest_dist > 800 and closest_dist <= 2000:
         #    light = 1
-        #    drones[drone_id].last_light = turn
+        #    drone.last_light = turn
         #else:
         #    light = 0
         light = 0
