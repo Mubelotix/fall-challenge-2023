@@ -8,7 +8,6 @@ colors = {}
 types = {}
 positions = {}
 speeds = {}
-all_scans = set()
 saved_scans = set()
 foe_saved_scans = set()
 drones = {}
@@ -21,6 +20,7 @@ class Drone:
         self.battery = battery
         self.last_light = -math.inf
         self.scans = set()
+        self.going_up = False
 
 class PossibleFishPosition:
     def __init__(self, ty):
@@ -80,16 +80,27 @@ while True:
             drones[drone_id].y = drone_y
             drones[drone_id].emergency = emergency
             drones[drone_id].battery = battery
+        if drone_y <= 500:
+            drones[drone_id].going_up = False
+        drones[drone_id].scans = set()
     foe_drone_count = int(input())
     for i in range(foe_drone_count):
         foe_drone_id, foe_drone_x, foe_drone_y, foe_emergency, foe_battery = [int(j) for j in input().split()]
     drone_scan_count = int(input())
     for i in range(drone_scan_count):
         drone_id, creature_id = [int(j) for j in input().split()]
+        try:
+            drones[drone_id].scans.add(creature_id)
+        except:
+            pass
     visible_creature_count = int(input())
+
     positions = {}
+    any_monster_active = False
     for i in range(visible_creature_count):
         creature_id, creature_x, creature_y, creature_vx, creature_vy = [int(j) for j in input().split()]
+        if types[creature_id] == -1 and (creature_vx != 0 or creature_vy != 0):
+            any_monster_active = True
         positions[creature_id] = creature_x, creature_y
         speeds[creature_id] = creature_vx, creature_vy
 
@@ -126,11 +137,31 @@ while True:
     inferred_positions = copy.deepcopy(positions)
     for creature_id in types.keys():
         if not creature_id in positions:
+            if positions.get(creature_id) is not None:
+                print("panic")
             inferred_positions[creature_id] = possible_fish_positions[creature_id].estimate()
+
+    # Get all scans
+    all_scans = set()
+    for drone_id in drones.keys():
+        for scan in drones[drone_id].scans:
+            all_scans.add(scan)
+    for scan in saved_scans:
+        all_scans.add(scan)
 
     turn += 1
     targetted = set()
     for drone_id in drones.keys():
+        # If emergency just wait
+        if drones[drone_id].emergency:
+            print("WAIT 0")
+            continue
+
+        # If going up
+        if drones[drone_id].going_up:
+            print(f"MOVE {drones[drone_id].x} 500 0")
+            continue
+
         # Retain positions from unscanned poissons
         unscanned_positions = copy.deepcopy(inferred_positions)
         for creature_id in all_scans:
@@ -151,21 +182,24 @@ while True:
             dx = x - drones[drone_id].x
             dy = y - drones[drone_id].y
             dist = math.sqrt(dx**2 + dy**2)
-            if creature_id in positions and (dist < 800 or (dist < 2000 and drones[drone_id].last_light == turn-1)):
-                all_scans.add(creature_id)
-                drones[drone_id].scans.add(creature_id)
-            else:
-                distances[creature_id] = dist
-        print(f"{distances}\n{drones[drone_id].scans}", file=sys.stderr, flush=True)
+            distances[creature_id] = dist
+        print(f"{positions}\n{inferred_positions}\n{distances}\n{drones[drone_id].scans}", file=sys.stderr, flush=True)
         
-        # Get the closest
+        # Get the closest passive and monster
         closest_dist = 10000
         closest_creature_id = 0
+        closest_monster_dist = 10000
+        closest_monster_id = 0
         for creature_id in distances.keys():
             distance = distances[creature_id]
-            if distance < closest_dist:
-                closest_dist = distance
-                closest_creature_id = creature_id
+            if types[creature_id] == -1:
+                if distance < closest_monster_dist:
+                    closest_monster_dist = distance
+                    closest_monster_id = creature_id
+            else:
+                if distance < closest_dist:
+                    closest_dist = distance
+                    closest_creature_id = creature_id
 
         # When all fish is caught, go to top
         if closest_creature_id == 0:
@@ -173,16 +207,25 @@ while True:
             print(f"MOVE {drones[drone_id].x} 0 0")
             continue
 
+        # When danger is nearby, go save the fish
+        if closest_monster_dist < 1200 and len(drones[drone_id].scans) > 0:
+            print(f"Danger nearby!", file=sys.stderr, flush=True)
+            print(f"MOVE {drones[drone_id].x} 500 0")
+            drones[drone_id].going_up = True
+            continue
+
         # Get to the target
+        print(f"Getting to fish {closest_creature_id}", file=sys.stderr, flush=True)
         tx, ty = inferred_positions[closest_creature_id]
         targetted.add(closest_creature_id)
 
         # Turn light on when allows catching fish
-        if closest_dist > 800 and closest_dist <= 2000:
-            light = 1
-            drones[drone_id].last_light = turn
-        else:
-            light = 0
+        #if closest_dist > 800 and closest_dist <= 2000:
+        #    light = 1
+        #    drones[drone_id].last_light = turn
+        #else:
+        #    light = 0
+        light = 0
 
         #dx = tx - drone_x
         #dy = ty - drone_y
