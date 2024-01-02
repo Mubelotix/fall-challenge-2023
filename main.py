@@ -302,74 +302,91 @@ while True:
             dy = ty - drone.y
             low = 424
             high = 424
-            if closest_monster_dist < 900:
+            if closest_monster_dist < 1150:
                 low = 154
                 high = 580
                 emojis += "⚠️"
-            if closest_monster_dist < 670:
+            if closest_monster_dist < 800:
                 low = 78
                 high = 595
                 emojis += "⚠️"
-            if closest_monster_dist < 640:
-                low = -154
-                high = 580
+            if closest_monster_dist < 680:
+                low = 0
+                high = 600
                 emojis += "⚠️"
             emojis += str(closest_monster_id)
+            l = ""
             if abs(dx) < abs(dy):
                 if dy < 0:
                     if inferred_positions[closest_monster_id][1] < drone.y:
                         dy = -low
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -high
+                            l = "A"
                         else:
                             dx = high
+                            l = "B"
                     else:
                         dy = -high
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -low
+                            l = "C"
                         else:
                             dx = low
+                            l = "D"
                 elif dy > 0:
                     if inferred_positions[closest_monster_id][1] > drone.y:
                         dy = low
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -high
+                            l = "E"
                         else:
                             dx = high
+                            l = "F"
                     else:
                         dy = high
                         if drone.x < inferred_positions[closest_monster_id][0]:
                             dx = -low
+                            l = "G"
                         else:
                             dx = low
+                            l = "H"
             else:
                 if dx < 0:
                     if inferred_positions[closest_monster_id][0] < drone.x:
                         dx = -low
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -high
+                            l = "I"
                         else:
                             dy = high
+                            l = "J"
                     else:
                         dx = -high
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -low
+                            l = "K"
                         else:
                             dy = low
+                            l = "L"
                 elif dx > 0:
                     if inferred_positions[closest_monster_id][0] > drone.x:
                         dx = low
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -high
+                            l = "M"
                         else:
                             dy = high
+                            l = "N"
                     else:
                         dx = high
                         if drone.y < inferred_positions[closest_monster_id][1]:
                             dy = -low
+                            l = "O"
                         else:
                             dy = low
-            print(f"HERE {low} {high} {dx} {dy}", file=sys.stderr, flush=True)
+                            l = "P"
+            print(f"HERE {low} {high} {dx} {dy} {l}", file=sys.stderr, flush=True)
             tx = round(drone.x+dx)
             ty = round(drone.y+dy)
         
