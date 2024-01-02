@@ -300,32 +300,38 @@ while True:
             emojis += "⚠️" + str(closest_monster_id)
             dx = tx - drone.x
             dy = ty - drone.y
+            low = 424
+            high = 424
+            if closest_monster_dist < 800:
+                low = 154
+                high = 580
+                emojis += "⚠️"
             if abs(dx) < abs(dy):
                 if dy < 0 and inferred_positions[closest_monster_id][1] < drone.y:
-                    dy = -424
+                    dy = -low
                     if drone.x < inferred_positions[closest_monster_id][0]:
-                        dx = -424
+                        dx = -high
                     else:
-                        dx = 424
+                        dx = high
                 elif dy > 0 and inferred_positions[closest_monster_id][1] > drone.y:
-                    dy = 424
+                    dy = low
                     if drone.x < inferred_positions[closest_monster_id][0]:
-                        dx = -424
+                        dx = -high
                     else:
-                        dx = 424
+                        dx = high
             else:
                 if dx < 0 and inferred_positions[closest_monster_id][0] < drone.x:
-                    dx = -424
+                    dx = -low
                     if drone.y < inferred_positions[closest_monster_id][1]:
-                        dy = -424
+                        dy = -high
                     else:
-                        dy = 424
+                        dy = high
                 elif dx > 0 and inferred_positions[closest_monster_id][0] > drone.x:
-                    dx = 424
+                    dx = low
                     if drone.y < inferred_positions[closest_monster_id][1]:
-                        dy = -424
+                        dy = -high
                     else:
-                        dy = 424
+                        dy = high
             tx = round(drone.x+dx)
             ty = round(drone.y+dy)
         
