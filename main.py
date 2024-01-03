@@ -21,6 +21,8 @@ foe_saved_scans = set()
 drones = {}
 possible_fish_positions = {}
 
+close_threshold = 600+540+500
+
 # Positions {4: (3874, 3550), 5: (6402, 4411), 6: (8355, 5131), 16: (2648, 4414), 17: (5807, 4260), 19: (8248, 4481)}
 # Possible positions {7: [3217..=6417, 5000..=6226], 8: [2567..=9999, 7500..=9999], 10: [0..=2000, 3057..=5000], 11: [2001..=2400, 3400..=5000], 12: [2567..=8625, 6227..=7100], 13: [3939..=4739, 6227..=6989], 14: [2567..=9999, 7500..=9999], 15: [2567..=5098, 7500..=9999], 16: [2484..=2484, 7426..=7426], 17: [2567..=9999, 2500..=6226]}
 
@@ -260,12 +262,15 @@ while True:
         deepest_creature_id = 0
         closest_monster_dist = 10000
         closest_monster_id = 0
+        close_monsters = set()
         for creature_id in distances.keys():
             distance = distances[creature_id]
             if types[creature_id] == -1:
                 if distance < closest_monster_dist:
                     closest_monster_dist = distance
                     closest_monster_id = creature_id
+                if distance <= close_threshold/1.5:
+                    close_monsters.add(creature_id)
             else:
                 if distance < closest_dist and distance >= 800:
                     closest_dist = distance
@@ -295,8 +300,37 @@ while True:
             tx = inferred_positions[deepest_creature_id][0]
             ty = inferred_positions[deepest_creature_id][1]
 
-        # Avoid threats
-        if closest_monster_dist < 600+540+500 - 200:
+        # Avoid threats when multiple
+        if len(close_monsters) > 1:
+            emojis += "😱"
+            dx_sum = 0
+            dy_sum = 0
+            count = 0
+            for creature_id in close_monsters:
+                dx = drone.x - inferred_positions[creature_id][0]
+                dy = drone.y - inferred_positions[creature_id][1]
+                current_norm = math.sqrt(dx**2 + dy**2)
+                if current_norm == 0:
+                    current_norm = 600
+                    dy = -600
+                extension = 600/current_norm
+                dx *= extension
+                dy *= extension
+                dx_sum += dx
+                dy_sum += dy
+                count += 1
+            dx = dx_sum / count
+            dy = dy_sum / count
+            current_norm = math.sqrt(dx**2 + dy**2)
+            if current_norm == 0:
+                current_norm = 600
+                dy = -600
+            extension = 600/current_norm
+            dx *= extension
+            dy *= extension
+            tx = round(drone.x+dx)
+            ty = round(drone.y+dy)
+        elif closest_monster_dist <= close_threshold:
             emojis += "⚠️"
             dx = tx - drone.x
             dy = ty - drone.y
@@ -311,8 +345,8 @@ while True:
                 high = 595
                 emojis += "⚠️"
             if closest_monster_dist < 680:
-                low = 0
-                high = 600
+                low = -78
+                high = 595
                 emojis += "⚠️"
             emojis += str(closest_monster_id)
             l = ""
