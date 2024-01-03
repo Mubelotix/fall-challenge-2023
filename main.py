@@ -439,7 +439,7 @@ while True:
             light = 0
 
         if monster_count >= 5:
-            if len(close_monsters) > 0 or drone.y < 3000 or drone.going_up or closest_monster_dist > 2500:
+            if len(close_monsters) > 0 or drone.y < 4400 or drone.going_up or closest_monster_dist > 2500:
                 norm = 600
             else:
                 norm = 450
