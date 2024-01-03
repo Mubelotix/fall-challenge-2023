@@ -121,6 +121,7 @@ while True:
         creature_id = int(input())
         foe_saved_scans.add(creature_id)
     my_drone_count = int(input())
+    emergency_count = 0
     for i in range(my_drone_count):
         drone_id, drone_x, drone_y, emergency, battery = [int(j) for j in input().split()]
         if not drone_id in drones:
@@ -132,6 +133,8 @@ while True:
             drones[drone_id].battery = battery
         if drone_y <= 500:
             drones[drone_id].going_up = False
+        if emergency:
+            emergency_count += 1
         drones[drone_id].scans = set()
     foe_drone_count = int(input())
     for i in range(foe_drone_count):
@@ -212,11 +215,12 @@ while True:
 
     # Get remaining fish
     remaining_fish = set()
-    for creature_id in inferred_positions.keys():
-        if not creature_id in all_scans:
-            remaining_fish.add(creature_id)
+    for creature_id in still_in_game:
+        if types[creature_id] != -1:
+            if not creature_id in all_scans:
+                remaining_fish.add(creature_id)
 
-    print(f"Positions {positions}\nPossible positions {possible_fish_positions}", file=sys.stderr, flush=True)
+    print(f"Positions {positions}\nPossible positions {possible_fish_positions}\n{remaining_fish}", file=sys.stderr, flush=True)
 
     turn += 1
     targetted = set()
@@ -289,7 +293,7 @@ while True:
 
         # Choose where to go when no fish is to be found
         if deepest_creature_id == 0 or (monster_count >= 5 and creatures_in_area <= 1):
-            if len(drone.scans) > 0:
+            if (len(drone.scans) > 0 and emergency_count == 0) or (monster_count >= 5 and creatures_in_area <= 1):
                 drone.going_up = True
             else:
                 drone.area = "all"
