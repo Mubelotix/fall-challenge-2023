@@ -134,12 +134,13 @@ while True:
     for i in range(foe_drone_count):
         foe_drone_id, foe_drone_x, foe_drone_y, foe_emergency, foe_battery = [int(j) for j in input().split()]
     drone_scan_count = int(input())
+    foe_scans = set()
     for i in range(drone_scan_count):
         drone_id, creature_id = [int(j) for j in input().split()]
         try:
             drones[drone_id].scans.add(creature_id)
         except:
-            pass
+            foe_scans.add(creature_id)
     visible_creature_count = int(input())
 
     positions = {}
@@ -212,14 +213,66 @@ while True:
     for creature_id in inferred_positions.keys():
         if not creature_id in all_scans:
             remaining_fish.add(creature_id)
+    
+    # Count points of scanned fish if they were saved right now
+    potential_score = 0
+    scans_by_ty = { 0: 0, 1: 0, 2: 0 }
+    scans_by_color = { 0: 0, 1: 0, 2: 0, 3: 0 }
+    foe_scans_by_ty = { 0: 0, 1: 0, 2: 0 }
+    foe_scans_by_color = { 0: 0, 1: 0, 2: 0, 3: 0 }
+    for creature_id in all_scans:
+        multiplier = int(not creature_id in foe_saved_scans) + 1
+        potential_score += (types[creature_id] + 1) * multiplier
+        scans_by_ty[types[creature_id]] += 1
+        scans_by_color[colors[creature_id]] += 1
+    for creature_id in foe_saved_scans:
+        foe_scans_by_ty[types[creature_id]] += 1
+        foe_scans_by_color[colors[creature_id]] += 1
+    for ty in scans_by_ty.keys():
+        multiplier = int(foe_scans_by_ty[ty] < 4) + 1
+        if scans_by_ty[ty] == 4:
+            potential_score += 4 * multiplier
+    for color in scans_by_color.keys():
+        multiplier = int(foe_scans_by_color[color] < 3) + 1
+        if scans_by_color[color] == 3:
+            potential_score += 3 * multiplier
+    
+    # Get foe potential score
+    all_possible_foe_scans = set()
+    all_possible_foe_scans = all_possible_foe_scans.union(foe_saved_scans)
+    all_possible_foe_scans = all_possible_foe_scans.union(foe_scans)
+    all_possible_foe_scans = all_possible_foe_scans.union(still_in_game)
+    foe_max_score = 0
+    foe_max_scans_by_ty = { 0: 0, 1: 0, 2: 0 }
+    foe_max_scans_by_color = { 0: 0, 1: 0, 2: 0, 3: 0 }
+    for creature_id in all_possible_foe_scans:
+        if types[creature_id] == -1:
+            continue
+        multiplier = int(not creature_id in all_scans) + 1
+        foe_max_score += (types[creature_id] + 1) * multiplier
+        foe_max_scans_by_ty[types[creature_id]] += 1
+        foe_max_scans_by_color[colors[creature_id]] += 1
+    for ty in foe_max_scans_by_ty.keys():
+        multiplier = int(scans_by_ty[ty] < 4) + 1
+        if foe_max_scans_by_ty[ty] == 4:
+            foe_max_score += 4 * multiplier
+    for color in foe_max_scans_by_color.keys():
+        multiplier = int(scans_by_color[color] < 3) + 1
+        if foe_max_scans_by_color[color] == 3:
+            foe_max_score += 3 * multiplier
 
-    print(f"Positions {positions}\nPossible positions {possible_fish_positions}", file=sys.stderr, flush=True)
+    print(f"Could score {potential_score} now (foe max {foe_max_score})\nPositions {positions}\nPossible positions {possible_fish_positions}", file=sys.stderr, flush=True)
 
     turn += 1
     targetted = set()
     for drone_id in drones.keys():
         drone = drones[drone_id]
         emojis = ""
+
+        # Enable going up if we could win
+        if potential_score >= foe_max_score:
+            emojis += "🏆"
+            drone.going_up = True
 
         # If emergency just wait
         if drone.emergency:
