@@ -99,13 +99,10 @@ class PossibleFishPosition:
         return self.__str__()
 
 creature_count = int(input())
-monster_count = 0
 for i in range(creature_count):
     creature_id, color, ty = [int(j) for j in input().split()]
     colors[creature_id] = color
     types[creature_id] = ty
-    if ty == -1:
-        monster_count += 1
 
 # game loop
 turn = 0
@@ -121,7 +118,6 @@ while True:
         creature_id = int(input())
         foe_saved_scans.add(creature_id)
     my_drone_count = int(input())
-    emergency_count = 0
     for i in range(my_drone_count):
         drone_id, drone_x, drone_y, emergency, battery = [int(j) for j in input().split()]
         if not drone_id in drones:
@@ -133,8 +129,6 @@ while True:
             drones[drone_id].battery = battery
         if drone_y <= 500:
             drones[drone_id].going_up = False
-        if emergency:
-            emergency_count += 1
         drones[drone_id].scans = set()
     foe_drone_count = int(input())
     for i in range(foe_drone_count):
@@ -215,12 +209,11 @@ while True:
 
     # Get remaining fish
     remaining_fish = set()
-    for creature_id in still_in_game:
-        if types[creature_id] != -1:
-            if not creature_id in all_scans:
-                remaining_fish.add(creature_id)
+    for creature_id in inferred_positions.keys():
+        if not creature_id in all_scans:
+            remaining_fish.add(creature_id)
 
-    print(f"Positions {positions}\nPossible positions {possible_fish_positions}\n{remaining_fish}", file=sys.stderr, flush=True)
+    print(f"Positions {positions}\nPossible positions {possible_fish_positions}", file=sys.stderr, flush=True)
 
     turn += 1
     targetted = set()
@@ -265,7 +258,6 @@ while True:
         # Get the closest passive, deepest passive, and closest monster
         closest_dist = 10000
         closest_creature_id = 0
-        creatures_in_area = 0
         deepest_depth = 0
         deepest_creature_id = 0
         closest_monster_dist = 10000
@@ -280,20 +272,18 @@ while True:
                 if distance <= close_threshold/1.5:
                     close_monsters.add(creature_id)
             else:
-                if distance < closest_dist:
+                if distance < closest_dist and distance >= 800:
                     closest_dist = distance
                     closest_creature_id = creature_id
                 is_left = inferred_positions[creature_id][0] < 5000
                 in_area = (drone.area == "left" and is_left) or (drone.area == "right" and not is_left) or drone.area == "all"
-                if in_area:
-                    creatures_in_area += 1
                 if in_area and inferred_positions[creature_id][1] > deepest_depth:
                     deepest_depth = inferred_positions[creature_id][1]
                     deepest_creature_id = creature_id
 
         # Choose where to go when no fish is to be found
-        if deepest_creature_id == 0 or (monster_count >= 5 and creatures_in_area <= 1):
-            if (len(drone.scans) > 0 and emergency_count == 0) or (monster_count >= 5 and creatures_in_area <= 1):
+        if deepest_creature_id == 0:
+            if len(drone.scans) > 0:
                 drone.going_up = True
             else:
                 drone.area = "all"
@@ -442,21 +432,4 @@ while True:
         else:
             light = 0
 
-        if monster_count >= 5:
-            if len(close_monsters) > 0 or drone.y < 4400 or drone.going_up or closest_monster_dist > 2500:
-                norm = 600
-            else:
-                norm = 450
-                emojis += "🐌"
-            dx = tx - drone.x
-            dy = ty - drone.y
-            current_norm = math.sqrt(dx**2 + dy**2)
-            if current_norm == 0:
-                current_norm = norm
-                dy = -norm
-            extension = norm/current_norm
-            dx *= extension
-            dy *= extension
-            tx = round(drone.x+dx)
-            ty = round(drone.y+dy)
         print(f"MOVE {tx} {ty} {light} {emojis}")
