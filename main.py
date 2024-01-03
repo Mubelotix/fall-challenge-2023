@@ -20,6 +20,10 @@ saved_scans = set()
 foe_saved_scans = set()
 drones = {}
 possible_fish_positions = {}
+already_seen_monsters = set()
+
+def should_monster_be_active(turn, y):
+    return 500+(turn-1)*600+800 < y
 
 close_threshold = 600+540+500
 
@@ -43,9 +47,15 @@ class Drone:
             self.area = "right"
 
 class PossibleFishPosition:
-    def __init__(self, ty):
+    def __init__(self, ty, creature_id):
         self.min_x = 0
         self.max_x = 9999
+        if ty==-1 and creature_id%2==0:
+            self.min_x = 0
+            self.max_x = 5000
+        else:
+            self.min_x = 5000
+            self.max_x = 9999
         self.min_y = 0
         self.max_y = 9999
         self.restrict_ty(ty)
@@ -144,18 +154,28 @@ while True:
     visible_creature_count = int(input())
 
     positions = {}
-    any_monster_active = False
     for i in range(visible_creature_count):
         creature_id, creature_x, creature_y, creature_vx, creature_vy = [int(j) for j in input().split()]
-        if types[creature_id] == -1 and (creature_vx != 0 or creature_vy != 0):
-            any_monster_active = True
         positions[creature_id] = creature_x, creature_y
         speeds[creature_id] = creature_vx, creature_vy
+
+        # Infer some monster positions based on symetry
+        if types[creature_id] == -1 and not creature_id in already_seen_monsters and turn <= 18:
+            if creature_id % 2 == 0:
+                associated_creature_id = creature_id + 1
+            else:
+                associated_creature_id = creature_id - 1
+            previous_x = creature_x - creature_vx
+            previous_y = creature_y - creature_vy
+            already_seen_monsters.add(creature_id)
+            already_seen_monsters.add(associated_creature_id)
+            positions[associated_creature_id] = 9999 - previous_x, previous_y
+            print(f"Inferring {associated_creature_id} is in {9999 - previous_x} {previous_y}", file=sys.stderr, flush=True)
 
     # Find out what the possible fish positions are
     for creature_id in types.keys():
         if not creature_id in possible_fish_positions:
-            possible_fish_positions[creature_id] = PossibleFishPosition(types[creature_id])
+            possible_fish_positions[creature_id] = PossibleFishPosition(types[creature_id], creature_id)
         else:
             possible_fish_positions[creature_id].extend(types[creature_id])
     for creature_id in positions:
@@ -265,7 +285,7 @@ while True:
 
     turn += 1
     targetted = set()
-    for drone_id in drones.keys():
+    for i_drone, drone_id in enumerate(drones.keys()):
         drone = drones[drone_id]
         emojis = ""
 
@@ -477,8 +497,8 @@ while True:
             tx = round(drone.x+dx)
             ty = round(drone.y+dy)
         
-        # Turn on light every 3 turns
-        if not drone.going_up and drone.y > 2500 and turn - drone.last_light >= 2:
+        # Turn on light every 2 turns, in an alternate manner
+        if not drone.going_up and drone.y > 2600 and turn%2 == i_drone:
             light = 1
             emojis += "💡"
             drone.last_light = turn
