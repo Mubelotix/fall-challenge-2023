@@ -99,10 +99,13 @@ class PossibleFishPosition:
         return self.__str__()
 
 creature_count = int(input())
+monster_count = 0
 for i in range(creature_count):
     creature_id, color, ty = [int(j) for j in input().split()]
     colors[creature_id] = color
     types[creature_id] = ty
+    if ty == -1:
+        monster_count += 1
 
 # game loop
 turn = 0
@@ -258,6 +261,7 @@ while True:
         # Get the closest passive, deepest passive, and closest monster
         closest_dist = 10000
         closest_creature_id = 0
+        creatures_in_area = 0
         deepest_depth = 0
         deepest_creature_id = 0
         closest_monster_dist = 10000
@@ -272,17 +276,19 @@ while True:
                 if distance <= close_threshold/1.5:
                     close_monsters.add(creature_id)
             else:
-                if distance < closest_dist and distance >= 800:
+                if distance < closest_dist:
                     closest_dist = distance
                     closest_creature_id = creature_id
                 is_left = inferred_positions[creature_id][0] < 5000
                 in_area = (drone.area == "left" and is_left) or (drone.area == "right" and not is_left) or drone.area == "all"
+                if in_area:
+                    creatures_in_area += 1
                 if in_area and inferred_positions[creature_id][1] > deepest_depth:
                     deepest_depth = inferred_positions[creature_id][1]
                     deepest_creature_id = creature_id
 
         # Choose where to go when no fish is to be found
-        if deepest_creature_id == 0:
+        if deepest_creature_id == 0 or (monster_count >= 5 and creatures_in_area <= 1):
             if len(drone.scans) > 0:
                 drone.going_up = True
             else:
@@ -432,4 +438,21 @@ while True:
         else:
             light = 0
 
+        if monster_count >= 5:
+            if len(close_monsters) > 0 or drone.y < 3000 or drone.going_up or closest_monster_dist > 2500:
+                norm = 600
+            else:
+                norm = 450
+                emojis += "🐌"
+            dx = tx - drone.x
+            dy = ty - drone.y
+            current_norm = math.sqrt(dx**2 + dy**2)
+            if current_norm == 0:
+                current_norm = norm
+                dy = -norm
+            extension = norm/current_norm
+            dx *= extension
+            dy *= extension
+            tx = round(drone.x+dx)
+            ty = round(drone.y+dy)
         print(f"MOVE {tx} {ty} {light} {emojis}")
