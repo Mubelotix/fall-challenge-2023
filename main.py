@@ -391,7 +391,7 @@ while True:
             ty = round(drone.y+dy)
         
         # Turn on light every 3 turns
-        if not drone.going_up and drone.y > 2500 and turn - drone.last_light >= 3:
+        if not drone.going_up and drone.y > 2500 and turn - drone.last_light >= 2:
             light = 1
             emojis += "💡"
             drone.last_light = turn
