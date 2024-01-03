@@ -423,7 +423,31 @@ while True:
                 emojis += "⚠️"
             emojis += str(closest_monster_id)
             l = ""
-            if abs(dx) < abs(dy):
+            if drone.x > 9999-540:
+                dx = -low
+                if inferred_positions[closest_monster_id][1] < drone.y: # monster is higher
+                    dy = high
+                    l = "1"
+                else:
+                    dy = -high
+                    l = "2"
+            elif drone.x < 540:
+                dx = low
+                if inferred_positions[closest_monster_id][1] < drone.y: # monster is higher
+                    dy = high
+                    l = "3"
+                else:
+                    dy = -high
+                    l = "4"
+            elif drone.y > 9999-540:
+                dy = -low
+                if inferred_positions[closest_monster_id][0] < drone.x: # monster is left
+                    dx = high
+                    l = "5"
+                else:
+                    dx = -high
+                    l = "6"
+            elif abs(dx) < abs(dy):
                 if dy < 0:
                     if inferred_positions[closest_monster_id][1] < drone.y:
                         dy = -low
