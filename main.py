@@ -28,9 +28,7 @@ def should_monster_be_active(turn, y):
 close_threshold = 600+540+500
 
 # Ideas:
-# - when area is all get to the closest
 # - don't get trapped on edges when purchased by many
-
 
 
 class Drone:
@@ -370,10 +368,14 @@ while True:
             tx = drone.x
             ty = 500
         else:
-            emojis += "🏹" + str(deepest_creature_id)
-            tx = inferred_positions[deepest_creature_id][0]
-            ty = inferred_positions[deepest_creature_id][1]
-            if types[deepest_creature_id] == 2 and drone.y < 7300:
+            if drone.area == "all" and closest_creature_id != 0:
+                creature_id = closest_creature_id
+            else:
+                creature_id = deepest_creature_id
+            emojis += "🏹" + str(creature_id)
+            tx = inferred_positions[creature_id][0]
+            ty = inferred_positions[creature_id][1]
+            if types[creature_id] == 2 and drone.y < 7300:
                 ty = 9999
                 if drone.area == "left":
                     tx = 2000
