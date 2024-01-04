@@ -27,8 +27,9 @@ def should_monster_be_active(turn, y):
 
 close_threshold = 600+540+500
 
-# Positions {4: (3874, 3550), 5: (6402, 4411), 6: (8355, 5131), 16: (2648, 4414), 17: (5807, 4260), 19: (8248, 4481)}
-# Possible positions {7: [3217..=6417, 5000..=6226], 8: [2567..=9999, 7500..=9999], 10: [0..=2000, 3057..=5000], 11: [2001..=2400, 3400..=5000], 12: [2567..=8625, 6227..=7100], 13: [3939..=4739, 6227..=6989], 14: [2567..=9999, 7500..=9999], 15: [2567..=5098, 7500..=9999], 16: [2484..=2484, 7426..=7426], 17: [2567..=9999, 2500..=6226]}
+# Ideas:
+# - when area is all get to the closest
+# - don't get trapped on edges when purchased by many
 
 
 
@@ -372,6 +373,12 @@ while True:
             emojis += "🏹" + str(deepest_creature_id)
             tx = inferred_positions[deepest_creature_id][0]
             ty = inferred_positions[deepest_creature_id][1]
+            if types[deepest_creature_id] == 2 and drone.y < 7300:
+                ty = 9999
+                if drone.area == "left":
+                    tx = 2000
+                elif drone.area == "right":
+                    tx = 7999
 
         # Avoid threats when multiple
         if len(close_monsters) > 1:
